@@ -1,0 +1,318 @@
+---
+title: 'Homework #1'
+author: "Nurassilova Omirbanu 1848425"
+date: "5/14/2019"
+output:
+  html_document: default
+---
+
+part 1
+
+A-R algorithm
+
+
+a) show how it is possible to simulate from a standard Normal distribution using pseudo-randomdeviates from a standard Cauchy and the A-R algorithm
+
+b) provide your R code for the implementation of the A-R
+
+In this task we aimed to simulate normal distribution \( f_x \) according to the following:
+
+<center>
+\( f_x(x) \leq k*f_u(x) \) (1)
+</center>
+
+
+\(f_u(x)\) - in our case it is standard cauchy distribution
+k - is a constant number
+
+in the next r code we calculated a value for k, and then plotted two distributions:
+
+  1) Standard Normal
+  
+  2) Standard Cauchy * k (we multiplied Standard Cauchy values according to the A-R algorithm)
+
+
+```{r}
+library(lattice)
+set.seed(123)
+some_val=1
+# value of our k
+k=(1+some_val^2)/(2.73^((some_val^2)/2))*sqrt(1/(2*3.143))*3.143
+curve(dnorm(x), from=-5, to =5,ylim=c(0,0.6),col="red")
+curve(k*dcauchy(x),from=-5, to = 5,add=T)
+legend("topleft", legend=c("k*Cauchy", "Normal"),
+       col=c("black", "red"), lty=1:1, cex=0.6)
+```
+
+In order to implement A-R algorithm we need at first take a random value called "u" from uniform distribution
+and compare it with the following equation:
+
+<center>
+\(\frac{f_x(x)}{k*f_u(x)}  \) (2)
+</center>
+
+if u is less than the equation (2) above we accept the values of x,
+otherwise we reject x.
+
+In the procedure below M is value of k.
+
+```{r}
+#provide your R code for the implementation of the A-R
+accept_or_reject <- function(x_gx, M){
+  u=runif(1,0,1)
+  if (u<=dnorm(x_gx)/(M*dcauchy(x_gx))){
+    return (TRUE)
+  }
+  else {
+    return (FALSE)
+  }
+}
+```
+
+the next step is executing a simulations using our implemented procedure to check variables which were simulated from Standard Cauchy distribution.
+
+```{r}
+accepted_x<-c()
+rejected_x<-c()
+Num_of_sim=100000
+for (i in 1:Num_of_sim){
+  X_gx=rcauchy(1)
+  A_R=accept_or_reject(X_gx,k)
+  if (A_R==TRUE) {
+    accepted_x=c(accepted_x,X_gx)
+  }
+  if (A_R==FALSE) {
+    rejected_x=c(rejected_x,X_gx)
+  }
+}
+hist(accepted_x,freq=FALSE)
+curve(dnorm(x), from=-4, to=4, add=T,col="red")
+```
+
+
+Our hist of accepted values is shown above.
+It shows that our accepted samples fits the standard normal distribution.
+
+c) evaluate numerically (approximately by MC) the acceptance probability
+
+```{r}
+p_mc=length(accepted_x)/Num_of_sim
+Theor_p_acc=1/k
+cat(" prob of acceptance by simulation:  ",p_mc,'\n',"prob of acceptance according to theory that it is equal 1/k: ", Theor_p_acc)
+```
+Our theoretical probability is close to that we got by MC simulations.
+
+
+
+d) write your theoretical explanation about how you have conceived your Monte Carlo estimate of the acceptance probability
+
+<center>
+\(P(A=1|X=x)= \frac{f_x(x)}{kf_u(x)}=\frac{f_x(x)}{k}\)  (3)
+</center>
+
+Probability of Acceptance depends on joint distribution of X r.v. and A r.v. (acceptance if A=1), so we can write following:
+
+<center>
+\(P(A=1)= \int P(X,A)dx= \int P(A=1|X=x)f_u(x)dx\) (4)
+</center>
+
+By combaining (3) and (4) we can get the next equation and knowledge that integral of pdf is equal to one:
+
+<center>
+\(P(A=1)= \frac{1}{k}\) (5)
+</center>
+
+
+
+
+e) save the rejected simulations and provide a graphical representation of the empirical distribution(histogram or density estimation)
+
+```{r}
+
+hist(rejected_x,freq=FALSE,breaks=100000,xlim = c(-50,50))
+densityplot(rejected_x, xlim=c(-10000,10000), bins=2)
+```
+
+f) derive the underlying density corresponding to the rejected random variables and try to compare it with the empirical distribution
+
+For rejected values we have distribution that is close to k*Cauchy-Normal:
+
+```{r}
+hist(rejected_x,freq=FALSE,breaks=100000,xlim = c(-50,50))
+curve(dcauchy(x)*k-dnorm(x), from =-50, to=50, col="green", add=T)
+```
+
+part 2
+
+2) Marginal likelihood evaluation for a Poisson data model. Simulate 10 observations from a knownPoisson distribution with expected value 2. Useset.seed(123)before starting your simulation. Use aGamma(1,1) prior distribution and compute the corresponding marginal likelihood in 3 differnt ways:
+
+a) exact analytic computation
+
+we have n iid random variables y1,...,yn from Poisson distribution as the samle data.
+Let us wirte their joint pdf:
+
+<center>
+\(P(Y_1=y_1,Y_2=y_2,...,Y_n=y_n|\theta)=\prod_{i=1}^{n}\frac{1}{y_i!}\theta^y_ie^-\theta=\theta^{\sum y_i} e^{-n\theta} \prod_{i=1}^{n}\frac{1}{y_i!} \) (6)
+</center>
+<center>
+\(\pi (\theta) = \frac{\beta^\alpha}{\Gamma(\alpha)} \theta^{\alpha-1}e^{-\beta\theta}\) (7)
+</center>
+
+We can compute posterior now:
+
+<center>
+\(P(\theta|y_1,...,y_n) = \frac{\beta^\alpha}{\Gamma(\alpha)} \theta^{\alpha-1}e^{-\beta\theta}\theta^{\sum y_i}e^{-n\theta} \prod_{i=1}^{n}\frac{1}{y_i!}\)  (8)
+</center>
+<center>
+\(P(\theta|y_1,...,y_n) = \frac{\beta^\alpha}{\Gamma(\alpha)} \theta^{\alpha-1+\sum y_i}e^{-{(\beta+n)}\theta}\prod_{i=1}^{n}\frac{1}{y_i!} \)  (9)
+</center>
+
+our posterior distribution of theta is the gamma distribution with alpha_post = alpha + sum(our data), beta_post=beta+n
+<center>
+\(\theta|y_1,...,y_n \sim gamma(\alpha + \sum{y_i}; \beta + n)\) 
+</center>
+
+our marginal likelihood is following:
+
+<center>
+\(b(data|m)=\int f(data|\theta, m)\pi(\theta|m)d\theta= \int L(\theta)\pi(\theta)d\theta \)      (10)
+</center>
+
+<center>
+\(b(data|m)=\int \frac{\beta^\alpha}{\Gamma(\alpha)} \theta^{\alpha-1+\sum y_i}e^{-{(\beta+n)}\theta}\prod_{i=1}^{n}\frac{1}{y_i!} d\theta \)     (11)
+</center>
+
+<center>
+\(b(data|m)= \frac{\beta^\alpha}{\Gamma(\alpha)} \frac{\Gamma(\alpha+\sum y+i)}{(\beta + n)^{\alpha+\sum y_i}}  \prod_{i=1}^{n}\frac{1}{y_i!} \)  (12)
+</center>
+
+Finally, we can compute the integral using r:
+
+```{r}
+set.seed(123)
+n<-10 # given number of observation
+mu=2 # given lambda
+# taking observations from Poisson distribution with expected value 2
+our_obs=rpois(n=10,mu)
+#sum(our_obs)
+# getting a likelihood value with given data and lambda
+L_pois<- function(lambda_value){
+  prod(dpois(our_obs,lambda=lambda_value))
+}
+L1_vec <- Vectorize(L_pois)
+# parameters of gamma distribution alpha and beta
+a=1 #alpha
+b=1 #beta
+value_of_marginal <- function(aa,bb,x_obs,nn){
+  ((bb^aa)*prod(1/factorial(x_obs))*gamma(aa+sum(x_obs))/(gamma(aa)*((bb+nn)^(aa+sum(x_obs)))))
+  }
+value_of_marg<- value_of_marginal(a,b,our_obs,n)
+value_of_marg
+```
+b) by Monte Carlo approximation using a sample form the posterior distribution and the harmonic mean approach. Try to evaluate random behaviour by repeating/iterating the approximation I_hat a sufficiently large number of times and show that the approximation tends to be (positively) biased.Use these simulations to evaluate approximately the corresponding variance and mean square error:
+
+our posterior is:
+<center>
+\(\theta|y_1,...,y_n \sim gamma(\alpha + \sum y_i; \beta + n)\)
+</center>
+
+Harmonic mean approach:
+
+<center>
+\(\epsilon^{HM}=\frac{1}{{\frac{1}{t}}\sum_{i=1}^{t}{\frac{1}{L(\theta_i)}}}\)     (12)
+</center>
+
+to evaluate this task we need to repeat following steps procedure 10000 times:
+
+  1) we got 1000 samples from posterior distribution
+  
+  2) calculated the likelihood values for that thetas
+  
+  3) save the calculation according to a formula above
+
+
+then we can compute bias and MSE
+```{r}
+num_of_samples=10000
+a_post=a+sum(our_obs)
+b_post=b+n
+EHM=c()
+# harmonic mean # part 2.2
+for (u in 1:num_of_samples){
+  theta_posterior <- rgamma(1000,a_post,b_post)
+  L_val<- L1_vec(theta_posterior)
+  EHM<- c(EHM,1/(sum(1/L_val)/1000))
+}
+hist(EHM,freq=FALSE)
+# bias
+bias_of_est<- mean(EHM) - value_of_marg
+#var
+var_of_est<- var(EHM)
+# MSE
+MSE<- bias_of_est^2+ var_of_est
+cat("bias: ",bias_of_est, "\n","var: ",var_of_est, "\n",'MSE: ',MSE, "\n")
+# theta
+cat("bias_theta: ",mean(theta_posterior)-mu, "\n","var_theta: ",var(theta_posterior), "\n","MSE_theta: ",(mean(theta_posterior)-mu)^2 +var(theta_posterior) , "\n")
+```
+
+From the results we see that bias is positive number.
+
+
+
+
+c) by Monte Carlo Importance sampling choosing an appropriate Cauchy distribution as auxiliary distribution for the simulation. Compare its performance with respect to the previous harmonic mean approach
+
+In importance sampling we use following:
+
+Our theta value will be distributed from Cauchy distribution:
+
+<center>
+\(\theta_1,...,\theta_t \sim Cauchy(0, 1)\)
+</center>
+
+<center>
+\(\hat{I}=\frac{1}{t}\sum_{1}^{t}h(\theta_i)\frac{\pi(\theta_i)}{q(\theta_i)}\)   (13)
+</center>
+
+in (13) formula the h(theta) is our likelihood,
+pi(theta) is our prior,
+and q(theta is our auxiliary distribution, which is now Cauchy distribution)
+
+```{r}
+num_of_samples=10000
+a_post=a+sum(our_obs)
+b_post=b+n
+imp_samp=c()
+
+for (u in 1:num_of_samples){
+  theta_posterior <- rcauchy(1000)#rgamma(1000,a_post,b_post)#
+  theta_posterior<-theta_posterior[theta_posterior>0]
+  L_val<- mean((L1_vec(theta_posterior)*dgamma(theta_posterior,1,1))/(dcauchy(theta_posterior)))
+  imp_samp<- c(imp_samp,L_val)
+}
+hist(imp_samp,freq=FALSE)
+
+# bias
+bias_of_est2<- mean(imp_samp) - value_of_marg
+#var
+var_of_est2<- var(imp_samp)
+# MSE
+MSE2<- bias_of_est2^2+ var_of_est2
+cat("bias ",bias_of_est2,"\n","var ",var_of_est2,"\n","MSE",MSE2,"\n")
+
+#theta
+cat("bias_theta: ",mean(theta_posterior)-mu, "\n","var_theta: ",var(theta_posterior), "\n","MSE_theta: ",(mean(theta_posterior)-mu)^2 +var(theta_posterior) , "\n")
+
+```
+
+
+
+If we compare the results of two different approaches the harmonic mean is not better that importance sampling.
+We can say that because of values of MSE for two methods.
+Harmonic mean has more MSE that importance sampling.
+
+
+```{r}
+cat("HM_MSE: ",MSE,"  IS_MSE: ",MSE2,"\n")
+MSE<MSE2
+```
